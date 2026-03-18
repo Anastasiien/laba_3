@@ -88,17 +88,13 @@ def create_vm(
             instance.status = InstanceStatus.RUNNING
         except Exception as e:
             instance.status = InstanceStatus.ERROR
-            import traceback
             print(f"[api] Ошибка запуска VM {instance_id}: {e}")
-            traceback.print_exc()
     else:
         instance.image_path = f"images/users/{user_id}/{instance_id}.qcow2"
         instance.status = InstanceStatus.RUNNING
         print(f"[api][STUB] VM {instance_id} создана")
-
     state.update_instance(instance)
     return instance
-
 
 def create_container(
     user_id: str,
@@ -125,7 +121,7 @@ def create_container(
             disk_gb = 10,
             time_limit_sec = time_limit_sec,
             traffic_limit_mb = traffic_limit_mb,
-            cpu_time_limit_sec = cpu_time_limit_sec,
+            cpu_time_limit_sec= cpu_time_limit_sec,
         ),
         ssh = SSHAccess(
             host = "localhost",
@@ -246,10 +242,12 @@ def _do_stop(instance: Instance) -> bool:
         return True
 
     return False
+
 def update_usage(instance_id: str, time_delta_sec: int = 10) -> None:
     instance = state.get_instance(instance_id)
     if not instance or not instance.is_running():
         return
+
     instance.usage.time_used_sec += time_delta_sec
     if instance.instance_type == InstanceType.VM and QEMU_AVAILABLE:
         try:
@@ -263,6 +261,7 @@ def update_usage(instance_id: str, time_delta_sec: int = 10) -> None:
             )
         except Exception:
             pass
+
     if instance.instance_type == InstanceType.VM and QEMU_AVAILABLE:
         try:
             instance.usage.cpu_time_used_sec = qemu_manager.get_cpu_time_sec(instance_id)
@@ -285,7 +284,6 @@ def get_user_instances(user_id: str) -> List[Instance]:
 
 def get_stats() -> dict:
     return state.get_stats()
-
 
 def get_available_os() -> List[dict]:
     return [
