@@ -37,10 +37,18 @@ def create_container(
         pass
 
     setup_ssh_cmd = (
-        "apt-get update && apt-get install -y openssh-server && "
+        "if command -v apt-get >/dev/null; then "
+            "apt-get update && apt-get install -y openssh-server; "
+        "elif command -v apk >/dev/null; then "
+            "apk add --no-cache openssh-server; "
+        "elif command -v dnf >/dev/null; then "
+            "dnf install -y openssh-server; "
+        "fi; "
+        
         "mkdir -p /var/run/sshd && "
         "echo 'root:password123' | chpasswd && "
-        "sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && "
+        "ssh-keygen -A && "
+        "sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && "
         "sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config && "
         "/usr/sbin/sshd -D"
     )
@@ -52,7 +60,7 @@ def create_container(
         nano_cpus=cpu * 1_000_000_000,
         mem_limit=f"{ram_mb}m",
         ports={'22/tcp': ssh_port},
-        entrypoint=["/bin/bash", "-c", setup_ssh_cmd],
+        entrypoint=["/bin/sh", "-c", setup_ssh_cmd],
         volumes={f"vol_{instance_id}": {'bind': '/root', 'mode': 'rw'}}
     )
     
@@ -63,7 +71,6 @@ def stop_container(container_id: str):
     try:
         container = client.containers.get(container_id)
         container.stop()
-        container.remove()
     except Exception as e:
         logger.error(f"Stop failed: {e}")
 

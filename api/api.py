@@ -229,7 +229,6 @@ def restart_instance(instance_id: str) -> bool:
 
 
 def _do_stop(instance: Instance) -> bool:
-    """Внутренняя функция остановки — не вызывать напрямую"""
     if instance.instance_type == InstanceType.VM:
         if QEMU_AVAILABLE:
             try:
@@ -273,6 +272,11 @@ def update_usage(instance_id: str, time_delta_sec: int = 10) -> None:
     if instance.instance_type == InstanceType.VM and QEMU_AVAILABLE:
         try:
             instance.usage.cpu_time_used_sec = qemu_manager.get_cpu_time_sec(instance_id)
+        except Exception:
+            pass
+    elif instance.instance_type == InstanceType.CONTAINER and DOCKER_AVAILABLE:
+        try:
+            instance.usage.cpu_time_used_sec = docker_manager.get_cpu_time_sec(instance.container_id)
         except Exception:
             pass
 

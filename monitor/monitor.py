@@ -10,6 +10,18 @@ def start_monitoring():
 
 def _monitor_loop():
     while True:
+        all_instances = api.get_all_instances()
+
+        if not all_instances:
+            print("[monitor] Нет инстансов")
+        else:
+            for inst in all_instances:
+                print(
+                    f"[monitor] {inst.id} | {inst.instance_type.value} | "
+                    f"{inst.status.value} | CPU: {inst.usage.cpu_time_used_sec:.2f}s | "
+                    f"Traffic: {inst.usage.traffic_used_mb:.2f}MB"
+                )
+
         running_instances = api.get_running_instances()
         
         for inst in running_instances:
@@ -19,7 +31,6 @@ def _monitor_loop():
                 if inst.usage.cpu_time_used_sec >= inst.limits.cpu_time_limit_sec:
                     api.stop_instance(inst.id, reason=StopReason.CPU_LIMIT)
 
-            from datetime import datetime
             uptime = (datetime.now() - inst.created_at).total_seconds()
             
             if inst.limits.time_limit_sec != -1:
